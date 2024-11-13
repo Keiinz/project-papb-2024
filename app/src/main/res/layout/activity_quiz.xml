@@ -1,0 +1,107 @@
+<!-- fragment_quiz.xml -->
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:background="#F4F5FB"
+    android:padding="16dp">
+
+    <!-- Back Button -->
+    <ImageButton
+        android:id="@+id/backButton"
+        android:layout_width="64dp"
+        android:layout_height="48dp"
+        android:layout_alignParentStart="true"
+        android:layout_marginTop="8dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="Back"
+        android:src="@drawable/ic_back_arrow"
+        app:tint="#3A4A8E" />
+
+    <!-- Question Text -->
+    <TextView
+        android:id="@+id/questionText"
+        android:layout_width="match_parent"
+        android:layout_height="150dp"
+        android:layout_below="@id/backButton"
+        android:layout_marginTop="16dp"
+        android:background="@drawable/rounded_background"
+        android:gravity="center"
+        android:padding="16dp"
+        android:text="QuestionFromTheFrontSide"
+        android:textColor="#0F0E0E"
+        android:textSize="18sp"
+        android:textStyle="bold" />
+
+    <!-- Option Buttons -->
+    <Button
+        android:id="@+id/option1"
+        style="@style/OptionButtonStyle"
+        android:layout_below="@id/questionText"
+        android:text="OptionFromTheBackSide"
+        android:layout_marginTop="16dp" />
+
+    <Button
+        android:id="@+id/option2"
+        style="@style/OptionButtonStyle"
+        android:layout_below="@id/option1"
+        android:text="OptionFromTheBackSide"
+        android:layout_marginTop="8dp" />
+
+    <Button
+        android:id="@+id/option3"
+        style="@style/OptionButtonStyle"
+        android:layout_below="@id/option2"
+        android:text="OptionFromTheBackSide"
+        android:layout_marginTop="8dp" />
+
+    <Button
+        android:id="@+id/option4"
+        style="@style/OptionButtonStyle"
+        android:layout_below="@id/option3"
+        android:text="OptionFromTheBackSide"
+        android:layout_marginTop="8dp" />
+
+
+    <!-- Progress Bar and Question Counter -->
+
+    <Button
+        android:id="@+id/tombolGantiFragment"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/option4"
+        android:layout_centerHorizontal="true"
+        android:text="Lihat Hasil"
+        android:layout_marginTop="16dp" />
+
+
+    <LinearLayout
+        android:id="@+id/progressContainer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:orientation="horizontal"
+        android:layout_marginTop="16dp">
+
+        <ProgressBar
+            android:id="@+id/progressBar"
+            style="@android:style/Widget.DeviceDefault.Light.ProgressBar.Horizontal"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:progress="33"
+            android:max="100" />
+
+        <TextView
+            android:id="@+id/progressText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginStart="8dp"
+            android:text="5 / 15"
+            android:textColor="#3A4A8E"
+            android:textSize="16sp" />
+
+    </LinearLayout>
+
+</RelativeLayout>
