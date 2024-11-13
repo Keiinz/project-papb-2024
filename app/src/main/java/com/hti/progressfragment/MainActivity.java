@@ -1,8 +1,9 @@
+
 package com.hti.progressfragment;
 
-import android.content.Intent;
 import android.os.Bundle;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.fragment.app.Fragment;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -11,14 +12,15 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // Buka QuizActivity langsung saat aplikasi dimulai
+
         if (savedInstanceState == null) {
-            startQuizActivity();
+            loadFragment(new QuizFragment());
         }
     }
 
-    private void startQuizActivity() {
-        Intent intent = new Intent(MainActivity.this, QuizActivity.class);
-        startActivity(intent);
+    private void loadFragment(Fragment fragment) {
+        getSupportFragmentManager().beginTransaction()
+                .replace(R.id.fragment_container, fragment)
+                .commit();
     }
 }

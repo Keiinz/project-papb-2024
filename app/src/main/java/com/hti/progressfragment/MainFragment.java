@@ -8,21 +8,22 @@ import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentTransaction;
 
 public class MainFragment extends Fragment {
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        // Menggunakan layout fragment_main.xml sebagai layout untuk MainFragment
-        return inflater.inflate(R.layout.activity_quiz, container, false);
+
+        return inflater.inflate(R.layout.fragment_quiz, container, false);
     }
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        // Mengganti child fragment dengan QuizFragment di dalam MainFragment
+
         if (savedInstanceState == null) {
             getChildFragmentManager().beginTransaction()
                     .replace(R.id.fragment_container, new QuizFragment()) // pastikan ID ini ada di layout utama, bukan fragment_main.xml

@@ -1,39 +1,48 @@
-// QuizActivity.java
+// QuizFragment.java
 package com.hti.progressfragment;
 
-import android.content.Intent;
 import android.os.Bundle;
-
-import androidx.appcompat.app.AppCompatActivity;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-public class QuizActivity extends AppCompatActivity {
+public class QuizFragment extends Fragment {
 
     private int nomorPertanyaan = 1;
     private int totalPertanyaan = 3;
 
+    @Nullable
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_quiz); // Ganti dengan layout activity
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        return inflater.inflate(R.layout.fragment_quiz, container, false);
+    }
 
-        ImageButton tombolKembali = findViewById(R.id.backButton);
-        TextView teksPertanyaan = findViewById(R.id.questionText);
-        Button opsi1 = findViewById(R.id.option1);
-        Button opsi2 = findViewById(R.id.option2);
-        Button opsi3 = findViewById(R.id.option3);
-        Button opsi4 = findViewById(R.id.option4);
-        ProgressBar progressBar = findViewById(R.id.progressBar);
-        TextView teksProgres = findViewById(R.id.progressText);
-        Button tombolGantiActivity = findViewById(R.id.tombolGantiFragment); // Diganti tombolGantiActivity
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+
+        ImageButton tombolKembali = view.findViewById(R.id.backButton);
+        TextView teksPertanyaan = view.findViewById(R.id.questionText);
+        Button opsi1 = view.findViewById(R.id.option1);
+        Button opsi2 = view.findViewById(R.id.option2);
+        Button opsi3 = view.findViewById(R.id.option3);
+        Button opsi4 = view.findViewById(R.id.option4);
+        ProgressBar progressBar = view.findViewById(R.id.progressBar);
+        TextView teksProgres = view.findViewById(R.id.progressText);
+        Button tombolGantiFragment = view.findViewById(R.id.tombolGantiFragment);
 
         perbaruiKonten(teksPertanyaan, teksProgres, progressBar, opsi1, opsi2, opsi3, opsi4);
 
-        tombolKembali.setOnClickListener(v -> onBackPressed());
+        tombolKembali.setOnClickListener(v -> getActivity().onBackPressed());
 
         View.OnClickListener optionClickListener = v -> {
             if (nomorPertanyaan < totalPertanyaan) {
@@ -44,10 +53,13 @@ public class QuizActivity extends AppCompatActivity {
             }
         };
 
-        tombolGantiActivity.setOnClickListener(v -> {
-            // Start ResultActivity instead of switching Fragment
-            Intent intent = new Intent(QuizActivity.this, ResultActivity.class);
-            startActivity(intent);
+        tombolGantiFragment.setOnClickListener(v -> {
+            FragmentManager fragmentManager = getActivity().getSupportFragmentManager();
+            FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+            ResultFragment hasilFragment = new ResultFragment();
+            fragmentTransaction.replace(R.id.fragment_container, hasilFragment);
+            fragmentTransaction.addToBackStack(null);
+            fragmentTransaction.commit();
         });
 
         opsi1.setOnClickListener(optionClickListener);
