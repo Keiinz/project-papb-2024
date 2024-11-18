@@ -1,21 +1,25 @@
 package com.example.memoryspark;
 
+import androidx.room.Entity;
+import androidx.room.PrimaryKey;
+
+@Entity(tableName = "decks")
 public class Deck {
-    private String id;
+    @PrimaryKey(autoGenerate = true)
+    private int id;
     private String name;
 
-    public Deck() {}
-
-    public Deck(String id, String name) {
-        this.id = id;
+    // Constructor
+    public Deck(String name) {
         this.name = name;
     }
 
-    public String getId() {
+    // Getters and Setters
+    public int getId() {
         return id;
     }
 
-    public void setId(String id) {
+    public void setId(int id) { // Room sets the ID
         this.id = id;
     }
 

@@ -1,27 +1,40 @@
 package com.example.memoryspark;
 
+import androidx.room.Entity;
+import androidx.room.ForeignKey;
+import androidx.room.Index;
+import androidx.room.PrimaryKey;
+
+@Entity(
+        tableName = "cards",
+        foreignKeys = @ForeignKey(
+                entity = Deck.class,
+                parentColumns = "id",
+                childColumns = "deckId",
+                onDelete = ForeignKey.CASCADE
+        ),
+        indices = @Index(value = "deckId") // Adding index on deckId
+)
 public class Card {
-    private String id;
+    @PrimaryKey(autoGenerate = true)
+    private int id;
     private String question;
     private String answer;
-    private String deckId;
+    private int deckId; // Foreign key referencing Deck
 
-    public Card() {
-        // Default constructor required for Firestore
-    }
-
-    public Card(String id, String question, String answer, String deckId) {
-        this.id = id;
+    // Constructors
+    public Card(String question, String answer, int deckId) {
         this.question = question;
         this.answer = answer;
         this.deckId = deckId;
     }
 
-    public String getId() {
+    // Getters and Setters
+    public int getId() {
         return id;
     }
 
-    public void setId(String id) {
+    public void setId(int id) { // Room sets the ID
         this.id = id;
     }
 
@@ -41,11 +54,11 @@ public class Card {
         this.answer = answer;
     }
 
-    public String getDeckId() {
+    public int getDeckId() {
         return deckId;
     }
 
-    public void setDeckId(String deckId) {
+    public void setDeckId(int deckId) {
         this.deckId = deckId;
     }
 }

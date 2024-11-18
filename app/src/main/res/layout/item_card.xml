@@ -2,6 +2,7 @@
 <androidx.cardview.widget.CardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/cardCardView"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_margin="8dp"
@@ -11,7 +12,8 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:padding="16dp">
 
         <!-- Front of the card -->
         <FrameLayout
@@ -28,7 +30,6 @@
                 android:textSize="18sp"
                 android:textColor="@color/md_theme_light_onPrimaryContainer"
                 android:gravity="center"/>
-
         </FrameLayout>
 
         <!-- Back of the card -->
@@ -47,9 +48,6 @@
                 android:textSize="18sp"
                 android:textColor="@color/md_theme_light_onTertiaryContainer"
                 android:gravity="center"/>
-
         </FrameLayout>
-
     </LinearLayout>
-
 </androidx.cardview.widget.CardView>

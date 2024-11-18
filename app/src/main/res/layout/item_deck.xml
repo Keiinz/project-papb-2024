@@ -14,7 +14,6 @@
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
-        <!-- Front of the card -->
         <FrameLayout
             android:id="@+id/frontCard"
             android:layout_width="match_parent"
@@ -23,45 +22,12 @@
             android:padding="16dp">
 
             <TextView
-                android:id="@+id/questionTextView"
+                android:id="@+id/deckNameTextView"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:textSize="18sp"
                 android:textColor="@color/md_theme_light_onPrimaryContainer"
                 android:gravity="center"/>
-
         </FrameLayout>
-
-        <!-- Back of the card -->
-        <FrameLayout
-            android:id="@+id/backCard"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="@color/md_theme_light_tertiaryContainer"
-            android:padding="16dp"
-            android:visibility="gone">
-
-            <TextView
-                android:id="@+id/answerTextView"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:textSize="18sp"
-                android:textColor="@color/md_theme_light_onTertiaryContainer"
-                android:gravity="center"/>
-
-        </FrameLayout>
-
-        <!-- Deck name placeholder -->
-        <TextView
-            android:id="@+id/deckNameTextView"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:padding="8dp"
-            android:textSize="18sp"
-            android:textColor="@android:color/black"
-            android:gravity="center"
-            android:visibility="visible"/> <!-- Set to visible -->
-
     </LinearLayout>
-
 </androidx.cardview.widget.CardView>
