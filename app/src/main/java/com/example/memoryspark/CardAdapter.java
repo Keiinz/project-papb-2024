@@ -87,7 +87,6 @@ public class CardAdapter extends RecyclerView.Adapter<CardAdapter.CardViewHolder
 
         public CardViewHolder(@NonNull View itemView) {
             super(itemView);
-            // Ensure that cardCardView exists in item_card.xml
             cardView = itemView.findViewById(R.id.cardCardView);
             questionText = itemView.findViewById(R.id.questionTextView);
             answerText = itemView.findViewById(R.id.answerTextView);

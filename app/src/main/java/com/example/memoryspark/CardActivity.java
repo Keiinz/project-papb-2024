@@ -1,12 +1,11 @@
 package com.example.memoryspark;
 
 import android.content.DialogInterface;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.TextView; // Import added
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -18,16 +17,25 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.textfield.TextInputEditText;
+import com.google.firebase.firestore.CollectionReference;
+import com.google.firebase.firestore.DocumentChange;
+import com.google.firebase.firestore.EventListener;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.FirebaseFirestoreException;
+import com.google.firebase.firestore.QuerySnapshot;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.annotation.Nullable;
+
 public class CardActivity extends AppCompatActivity implements CardAdapter.OnCardSelectedListener {
 
-    private AppDatabase db;
+    private FirebaseFirestore db;
+    private CollectionReference cardCollection;
     private List<Card> cardList;
     private CardAdapter cardAdapter;
-    private int deckId;
+    private String deckId;
     private String deckName;
 
     @Override
@@ -41,10 +49,10 @@ public class CardActivity extends AppCompatActivity implements CardAdapter.OnCar
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
         // Get intent extras
-        deckId = getIntent().getIntExtra("deckId", -1);
+        deckId = getIntent().getStringExtra("deckId");
         deckName = getIntent().getStringExtra("deckName");
 
-        if (deckId == -1 || deckName == null || deckName.isEmpty()) {
+        if (deckId == null || deckName == null || deckName.isEmpty()) {
             Toast.makeText(this, "Invalid deck. Returning to main screen.", Toast.LENGTH_SHORT).show();
             finish();
             return;
@@ -52,8 +60,9 @@ public class CardActivity extends AppCompatActivity implements CardAdapter.OnCar
 
         getSupportActionBar().setTitle(deckName);
 
-        // Initialize Room Database
-        db = AppDatabase.getInstance(this);
+        // Initialize Firestore
+        db = FirebaseFirestore.getInstance();
+        cardCollection = db.collection("decks").document(deckId).collection("cards");
 
         // Initialize card list and adapter
         cardList = new ArrayList<>();
@@ -68,8 +77,51 @@ public class CardActivity extends AppCompatActivity implements CardAdapter.OnCar
         FloatingActionButton addCardBtn = findViewById(R.id.addCardBtn);
         addCardBtn.setOnClickListener(view -> showAddCardDialog());
 
-        // Fetch Cards from Room
-        fetchCards();
+        // Listen for real-time updates
+        cardCollection.addSnapshotListener(new EventListener<QuerySnapshot>() {
+            @Override
+            public void onEvent(@Nullable QuerySnapshot snapshots,
+                                @Nullable FirebaseFirestoreException e) {
+                if (e != null) {
+                    Toast.makeText(CardActivity.this, "Error loading cards.", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                for (DocumentChange dc : snapshots.getDocumentChanges()) {
+                    Card card = dc.getDocument().toObject(Card.class);
+                    card.setId(dc.getDocument().getId());
+                    switch (dc.getType()) {
+                        case ADDED:
+                            cardList.add(card);
+                            cardAdapter.notifyItemInserted(cardList.size() - 1);
+                            break;
+                        case MODIFIED:
+                            int index = getCardIndexById(card.getId());
+                            if (index != -1) {
+                                cardList.set(index, card);
+                                cardAdapter.notifyItemChanged(index);
+                            }
+                            break;
+                        case REMOVED:
+                            index = getCardIndexById(card.getId());
+                            if (index != -1) {
+                                cardList.remove(index);
+                                cardAdapter.notifyItemRemoved(index);
+                            }
+                            break;
+                    }
+                }
+            }
+        });
+    }
+
+    private int getCardIndexById(String id) {
+        for (int i = 0; i < cardList.size(); i++) {
+            if (cardList.get(i).getId().equals(id)) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     // Handle Toolbar back button click
@@ -97,7 +149,7 @@ public class CardActivity extends AppCompatActivity implements CardAdapter.OnCar
             String answer = answerInput.getText().toString().trim();
             if (!question.isEmpty() && !answer.isEmpty()) {
                 Card newCard = new Card(question, answer, deckId);
-                new InsertCardTask().execute(newCard);
+                addCardToFirestore(newCard);
             } else {
                 Toast.makeText(CardActivity.this, "Please enter both question and answer", Toast.LENGTH_SHORT).show();
             }
@@ -108,8 +160,19 @@ public class CardActivity extends AppCompatActivity implements CardAdapter.OnCar
         builder.show();
     }
 
+    // Add Card to Firestore
+    private void addCardToFirestore(Card card) {
+        cardCollection.add(card)
+                .addOnSuccessListener(documentReference -> {
+                    Toast.makeText(CardActivity.this, "Card added successfully", Toast.LENGTH_SHORT).show();
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(CardActivity.this, "Failed to add card", Toast.LENGTH_SHORT).show();
+                });
+    }
+
     // Show Edit Card Dialog
-    private void showEditCardDialog(Card card, int position) {
+    private void showEditCardDialog(Card card) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Edit Card");
 
@@ -126,7 +189,7 @@ public class CardActivity extends AppCompatActivity implements CardAdapter.OnCar
             if (!question.isEmpty() && !answer.isEmpty()) {
                 card.setQuestion(question);
                 card.setAnswer(answer);
-                new UpdateCardTask(card, position).execute();
+                updateCardInFirestore(card);
             } else {
                 Toast.makeText(CardActivity.this, "Please enter both question and answer", Toast.LENGTH_SHORT).show();
             }
@@ -137,115 +200,36 @@ public class CardActivity extends AppCompatActivity implements CardAdapter.OnCar
         builder.show();
     }
 
+    // Update Card in Firestore
+    private void updateCardInFirestore(Card card) {
+        cardCollection.document(card.getId()).set(card)
+                .addOnSuccessListener(aVoid -> {
+                    Toast.makeText(CardActivity.this, "Card updated successfully", Toast.LENGTH_SHORT).show();
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(CardActivity.this, "Failed to update card", Toast.LENGTH_SHORT).show();
+                });
+    }
+
     // Confirm Delete Card
-    private void confirmDeleteCard(Card card, int position) {
+    private void confirmDeleteCard(Card card) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Delete Card");
         builder.setMessage("Are you sure you want to delete this card?");
-        builder.setPositiveButton("Yes", (dialog, which) -> new DeleteCardTask(card, position).execute());
+        builder.setPositiveButton("Yes", (dialog, which) -> deleteCardFromFirestore(card));
         builder.setNegativeButton("No", (dialog, which) -> dialog.cancel());
         builder.show();
     }
 
-    // Fetch cards from the Room database
-    private void fetchCards() {
-        new FetchCardsTask().execute();
-    }
-
-    // AsyncTask to fetch cards from Room
-    private class FetchCardsTask extends AsyncTask<Void, Void, List<Card>> {
-        @Override
-        protected List<Card> doInBackground(Void... voids) {
-            return db.cardDao().getCardsForDeck(deckId);
-        }
-
-        @Override
-        protected void onPostExecute(List<Card> cards) {
-            cardList.clear();
-            cardList.addAll(cards);
-            cardAdapter.notifyDataSetChanged();
-        }
-    }
-
-    // AsyncTask to insert a new card into Room
-    private class InsertCardTask extends AsyncTask<Card, Void, Void> {
-        @Override
-        protected Void doInBackground(Card... cards) {
-            db.cardDao().insertCard(cards[0]);
-            return null;
-        }
-
-        @Override
-        protected void onPostExecute(Void aVoid) {
-            fetchCards();
-            Toast.makeText(CardActivity.this, "Card added successfully", Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    // AsyncTask to update an existing card in Room
-    private class UpdateCardTask extends AsyncTask<Void, Void, Boolean> {
-        private Card card;
-        private int position;
-
-        public UpdateCardTask(Card card, int position) {
-            this.card = card;
-            this.position = position;
-        }
-
-        @Override
-        protected Boolean doInBackground(Void... voids) {
-            try {
-                db.cardDao().updateCard(card);
-                return true;
-            } catch (Exception e) {
-                e.printStackTrace();
-                return false;
-            }
-        }
-
-        @Override
-        protected void onPostExecute(Boolean success) {
-            if (success) {
-                cardList.set(position, card);
-                cardAdapter.notifyItemChanged(position);
-                Toast.makeText(CardActivity.this, "Card updated successfully", Toast.LENGTH_SHORT).show();
-            } else {
-                Toast.makeText(CardActivity.this, "Failed to update card", Toast.LENGTH_SHORT).show();
-            }
-        }
-    }
-
-    // AsyncTask to delete a card from Room
-    private class DeleteCardTask extends AsyncTask<Void, Void, Boolean> {
-        private Card card;
-        private int position;
-
-        public DeleteCardTask(Card card, int position) {
-            this.card = card;
-            this.position = position;
-        }
-
-        @Override
-        protected Boolean doInBackground(Void... voids) {
-            try {
-                db.cardDao().deleteCard(card);
-                return true;
-            } catch (Exception e) {
-                e.printStackTrace();
-                return false;
-            }
-        }
-
-        @Override
-        protected void onPostExecute(Boolean success) {
-            if (success) {
-                cardList.remove(position);
-                cardAdapter.notifyItemRemoved(position);
-                Toast.makeText(CardActivity.this, "Card deleted successfully", Toast.LENGTH_SHORT).show();
-            } else {
-                Toast.makeText(CardActivity.this, "Failed to delete card", Toast.LENGTH_SHORT).show();
-            }
-        }
+    // Delete Card from Firestore
+    private void deleteCardFromFirestore(Card card) {
+        cardCollection.document(card.getId()).delete()
+                .addOnSuccessListener(aVoid -> {
+                    Toast.makeText(CardActivity.this, "Card deleted successfully", Toast.LENGTH_SHORT).show();
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(CardActivity.this, "Failed to delete card", Toast.LENGTH_SHORT).show();
+                });
     }
 
     // Implementation of the new interface method to handle single clicks
@@ -279,11 +263,11 @@ public class CardActivity extends AppCompatActivity implements CardAdapter.OnCar
     // Implementation of the interface methods
     @Override
     public void onCardEdit(Card card, int position) {
-        showEditCardDialog(card, position);
+        showEditCardDialog(card);
     }
 
     @Override
     public void onCardDelete(Card card, int position) {
-        confirmDeleteCard(card, position);
+        confirmDeleteCard(card);
     }
 }

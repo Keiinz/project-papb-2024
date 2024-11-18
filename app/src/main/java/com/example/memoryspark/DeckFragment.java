@@ -2,7 +2,6 @@ package com.example.memoryspark;
 
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -17,23 +16,27 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.android.volley.RequestQueue;
-import com.android.volley.toolbox.ImageRequest;
-import com.android.volley.toolbox.Volley;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.textfield.TextInputEditText;
+import com.google.firebase.firestore.CollectionReference;
+import com.google.firebase.firestore.DocumentChange;
+import com.google.firebase.firestore.EventListener;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.FirebaseFirestoreException;
+import com.google.firebase.firestore.QuerySnapshot;
 
 import java.util.ArrayList;
 import java.util.List;
 
+
 public class DeckFragment extends Fragment {
 
-    private AppDatabase db;
+    private FirebaseFirestore db;
+    private CollectionReference deckCollection;
     private List<Deck> deckList;
     private DeckAdapter deckAdapter;
     private ImageView profileImageView;
-    private RequestQueue requestQueue;
-    private static final String IMAGE_URL = "https://res.cloudinary.com/dxvcpxgzs/image/upload/v1730794317/WhatsApp_Image_2024-11-01_at_23.30.01_293b596f_wkb5ip.jpg";
+    private String profileImageUrl = "https://res.cloudinary.com/dxvcpxgzs/image/upload/v1730794317/WhatsApp_Image_2024-11-01_at_23.30.01_293b596f_wkb5ip.jpg"; // Replace with your actual URL
 
     @Nullable
     @Override
@@ -41,8 +44,9 @@ public class DeckFragment extends Fragment {
                              @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_deck, container, false);
 
-        // Initialize Room Database
-        db = AppDatabase.getInstance(getContext());
+        // Initialize Firestore
+        db = FirebaseFirestore.getInstance();
+        deckCollection = db.collection("decks");
 
         // Initialize deck list and adapter
         deckList = new ArrayList<>();
@@ -54,12 +58,12 @@ public class DeckFragment extends Fragment {
 
             @Override
             public void onDeckEdit(Deck deck, int position) {
-                showEditDeckDialog(deck, position);
+                showEditDeckDialog(deck);
             }
 
             @Override
             public void onDeckDelete(Deck deck, int position) {
-                confirmDeleteDeck(deck, position);
+                confirmDeleteDeck(deck);
             }
         });
 
@@ -72,12 +76,21 @@ public class DeckFragment extends Fragment {
         FloatingActionButton addDeckFab = view.findViewById(R.id.addDeckFab);
         addDeckFab.setOnClickListener(v -> showAddDeckDialog());
 
-        // Initialize Volley Request Queue
-        requestQueue = Volley.newRequestQueue(getContext());
-
-        // Load profile image from URL
+        // Set up profile image
         profileImageView = view.findViewById(R.id.profileImageView);
-        loadImageFromUrl(IMAGE_URL);
+        // Load image using Volley or any image loading library
+        // Example using Volley:
+        com.android.volley.toolbox.ImageRequest imageRequest = new com.android.volley.toolbox.ImageRequest(
+                profileImageUrl,
+                response -> profileImageView.setImageBitmap(response),
+                0, // max width
+                0, // max height
+                ImageView.ScaleType.CENTER_CROP,
+                null,
+                error -> Toast.makeText(getContext(), "Failed to load profile image", Toast.LENGTH_SHORT).show()
+        );
+        com.android.volley.RequestQueue requestQueue = com.android.volley.toolbox.Volley.newRequestQueue(getContext());
+        requestQueue.add(imageRequest);
 
         // Set OnClickListener for profile image
         profileImageView.setOnClickListener(v -> {
@@ -85,10 +98,53 @@ public class DeckFragment extends Fragment {
             startActivity(intent);
         });
 
-        // Fetch decks from Room database
-        fetchDecks();
+        // Listen for real-time updates
+        deckCollection.addSnapshotListener(new EventListener<QuerySnapshot>() {
+            @Override
+            public void onEvent(@Nullable QuerySnapshot snapshots,
+                                @Nullable FirebaseFirestoreException e) {
+                if (e != null) {
+                    Toast.makeText(getContext(), "Error loading decks.", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                for (DocumentChange dc : snapshots.getDocumentChanges()) {
+                    Deck deck = dc.getDocument().toObject(Deck.class);
+                    deck.setId(dc.getDocument().getId());
+                    switch (dc.getType()) {
+                        case ADDED:
+                            deckList.add(deck);
+                            deckAdapter.notifyItemInserted(deckList.size() - 1);
+                            break;
+                        case MODIFIED:
+                            int index = getDeckIndexById(deck.getId());
+                            if (index != -1) {
+                                deckList.set(index, deck);
+                                deckAdapter.notifyItemChanged(index);
+                            }
+                            break;
+                        case REMOVED:
+                            index = getDeckIndexById(deck.getId());
+                            if (index != -1) {
+                                deckList.remove(index);
+                                deckAdapter.notifyItemRemoved(index);
+                            }
+                            break;
+                    }
+                }
+            }
+        });
 
         return view;
+    }
+
+    private int getDeckIndexById(String id) {
+        for (int i = 0; i < deckList.size(); i++) {
+            if (deckList.get(i).getId().equals(id)) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     private void openCardActivity(Deck deck) {
@@ -111,7 +167,7 @@ public class DeckFragment extends Fragment {
             String deckName = input.getText().toString().trim();
             if (!deckName.isEmpty()) {
                 Deck newDeck = new Deck(deckName);
-                new InsertDeckTask().execute(newDeck);
+                addDeckToFirestore(newDeck);
             } else {
                 Toast.makeText(getContext(), "Please enter a deck name", Toast.LENGTH_SHORT).show();
             }
@@ -122,8 +178,19 @@ public class DeckFragment extends Fragment {
         builder.show();
     }
 
+    // Add Deck to Firestore
+    private void addDeckToFirestore(Deck deck) {
+        deckCollection.add(deck)
+                .addOnSuccessListener(documentReference -> {
+                    Toast.makeText(getContext(), "Deck added successfully", Toast.LENGTH_SHORT).show();
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(getContext(), "Failed to add deck", Toast.LENGTH_SHORT).show();
+                });
+    }
+
     // Show Edit Deck Dialog
-    private void showEditDeckDialog(Deck deck, int position) {
+    private void showEditDeckDialog(Deck deck) {
         AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
         builder.setTitle("Edit Deck");
 
@@ -136,7 +203,7 @@ public class DeckFragment extends Fragment {
             String deckName = input.getText().toString().trim();
             if (!deckName.isEmpty()) {
                 deck.setName(deckName);
-                new UpdateDeckTask(deck, position).execute();
+                updateDeckInFirestore(deck);
             } else {
                 Toast.makeText(getContext(), "Please enter a deck name", Toast.LENGTH_SHORT).show();
             }
@@ -147,127 +214,35 @@ public class DeckFragment extends Fragment {
         builder.show();
     }
 
+    // Update Deck in Firestore
+    private void updateDeckInFirestore(Deck deck) {
+        deckCollection.document(deck.getId()).set(deck)
+                .addOnSuccessListener(aVoid -> {
+                    Toast.makeText(getContext(), "Deck updated successfully", Toast.LENGTH_SHORT).show();
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(getContext(), "Failed to update deck", Toast.LENGTH_SHORT).show();
+                });
+    }
+
     // Confirm Delete Deck
-    private void confirmDeleteDeck(Deck deck, int position) {
+    private void confirmDeleteDeck(Deck deck) {
         AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
         builder.setTitle("Delete Deck");
         builder.setMessage("Are you sure you want to delete this deck?");
-        builder.setPositiveButton("Yes", (dialog, which) -> new DeleteDeckTask(deck, position).execute());
+        builder.setPositiveButton("Yes", (dialog, which) -> deleteDeckFromFirestore(deck));
         builder.setNegativeButton("No", (dialog, which) -> dialog.cancel());
         builder.show();
     }
 
-    // Fetch decks from Room database
-    private void fetchDecks() {
-        new FetchDecksTask().execute();
-    }
-
-    // Load Image from URL using Volley
-    private void loadImageFromUrl(String url) {
-        ImageRequest imageRequest = new ImageRequest(url,
-                response -> profileImageView.setImageBitmap(response),
-                0, // Width
-                0, // Height
-                ImageView.ScaleType.CENTER_CROP,
-                null, // Bitmap config
-                error -> Toast.makeText(getContext(), "Failed to load image", Toast.LENGTH_SHORT).show());
-
-        requestQueue.add(imageRequest);
-    }
-
-    // AsyncTask to fetch decks from Room
-    private class FetchDecksTask extends AsyncTask<Void, Void, List<Deck>> {
-        @Override
-        protected List<Deck> doInBackground(Void... voids) {
-            return db.deckDao().getAllDecks();
-        }
-
-        @Override
-        protected void onPostExecute(List<Deck> decks) {
-            deckList.clear();
-            deckList.addAll(decks);
-            deckAdapter.notifyDataSetChanged();
-        }
-    }
-
-    // AsyncTask to insert a new deck into Room
-    private class InsertDeckTask extends AsyncTask<Deck, Void, Void> {
-        @Override
-        protected Void doInBackground(Deck... decks) {
-            db.deckDao().insertDeck(decks[0]);
-            return null;
-        }
-
-        @Override
-        protected void onPostExecute(Void aVoid) {
-            fetchDecks();
-            Toast.makeText(getContext(), "Deck added successfully", Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    // AsyncTask to update an existing deck in Room
-    private class UpdateDeckTask extends AsyncTask<Void, Void, Boolean> {
-        private Deck deck;
-        private int position;
-
-        public UpdateDeckTask(Deck deck, int position) {
-            this.deck = deck;
-            this.position = position;
-        }
-
-        @Override
-        protected Boolean doInBackground(Void... voids) {
-            try {
-                db.deckDao().updateDeck(deck);
-                return true;
-            } catch (Exception e) {
-                e.printStackTrace();
-                return false;
-            }
-        }
-
-        @Override
-        protected void onPostExecute(Boolean success) {
-            if (success) {
-                deckList.set(position, deck);
-                deckAdapter.notifyItemChanged(position);
-                Toast.makeText(getContext(), "Deck updated successfully", Toast.LENGTH_SHORT).show();
-            } else {
-                Toast.makeText(getContext(), "Failed to update deck", Toast.LENGTH_SHORT).show();
-            }
-        }
-    }
-
-    // AsyncTask to delete a deck from Room
-    private class DeleteDeckTask extends AsyncTask<Void, Void, Boolean> {
-        private Deck deck;
-        private int position;
-
-        public DeleteDeckTask(Deck deck, int position) {
-            this.deck = deck;
-            this.position = position;
-        }
-
-        @Override
-        protected Boolean doInBackground(Void... voids) {
-            try {
-                db.deckDao().deleteDeck(deck);
-                return true;
-            } catch (Exception e) {
-                e.printStackTrace();
-                return false;
-            }
-        }
-
-        @Override
-        protected void onPostExecute(Boolean success) {
-            if (success) {
-                deckList.remove(position);
-                deckAdapter.notifyItemRemoved(position);
-                Toast.makeText(getContext(), "Deck deleted successfully", Toast.LENGTH_SHORT).show();
-            } else {
-                Toast.makeText(getContext(), "Failed to delete deck", Toast.LENGTH_SHORT).show();
-            }
-        }
+    // Delete Deck from Firestore
+    private void deleteDeckFromFirestore(Deck deck) {
+        deckCollection.document(deck.getId()).delete()
+                .addOnSuccessListener(aVoid -> {
+                    Toast.makeText(getContext(), "Deck deleted successfully", Toast.LENGTH_SHORT).show();
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(getContext(), "Failed to delete deck", Toast.LENGTH_SHORT).show();
+                });
     }
 }

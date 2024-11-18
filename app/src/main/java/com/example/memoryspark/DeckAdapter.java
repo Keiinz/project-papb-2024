@@ -44,9 +44,13 @@ public class DeckAdapter extends RecyclerView.Adapter<DeckAdapter.DeckViewHolder
         holder.deckNameTextView.setText(deck.getName());
 
         // Handle deck selection
-        holder.cardView.setOnClickListener(v -> listener.onDeckSelected(deck));
+        holder.cardView.setOnClickListener(v -> {
+            if (listener != null) {
+                listener.onDeckSelected(deck);
+            }
+        });
 
-        // Handle deck options (Edit/Delete) via PopupMenu
+        // Handle deck options (Edit/Delete) via PopupMenu on long click
         holder.cardView.setOnLongClickListener(v -> {
             showPopupMenu(v, deck, holder.getAdapterPosition());
             return true;

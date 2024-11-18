@@ -1,7 +1,7 @@
 // Apply the necessary plugins
 plugins {
-    id 'com.android.application'
-    id 'com.google.gms.google-services'
+    id 'com.android.application' version '8.1.0' // Specify the latest compatible AGP version
+    id 'com.google.gms.google-services' version '4.3.15' // Match the version in project-level build.gradle
 }
 
 android {
@@ -31,20 +31,20 @@ android {
 }
 
 dependencies {
-    // Remove Firestore dependencies
-    // implementation "com.google.firebase:firebase-firestore"
-    // implementation 'com.google.firebase:firebase-firestore:24.7.1'
+    // Firebase BOM for managing Firebase library versions
+    implementation platform('com.google.firebase:firebase-bom:32.2.0') // Use the latest BOM version
 
-    // Room components
+    // Firebase Firestore
+    implementation 'com.google.firebase:firebase-firestore'
+
+    // Optional: Firebase Auth if needed
+    // implementation 'com.google.firebase:firebase-auth'
+
+    // Remove Room dependencies
+    /*
     implementation "androidx.room:room-runtime:2.5.2"
     annotationProcessor "androidx.room:room-compiler:2.5.2" // For Java
-    // If you prefer using Kotlin, replace annotationProcessor with kapt and apply the kotlin-kapt plugin
-
-    // Optional - RxJava support for Room
-    // implementation "androidx.room:room-rxjava2:2.5.2"
-
-    // Optional - Kotlin Extensions and Coroutines support for Room
-    // implementation "androidx.room:room-ktx:2.5.2"
+    */
 
     // Lifecycle components
     implementation 'androidx.lifecycle:lifecycle-extensions:2.2.0'
@@ -69,6 +69,9 @@ dependencies {
     // ConstraintLayout
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
 
+    // Firebase UI (Optional: For easier Firestore integration with RecyclerView)
+    // implementation 'com.firebaseui:firebase-ui-firestore:8.0.0'
+
     // Testing libraries
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
@@ -77,3 +80,11 @@ dependencies {
     // Kotlin Standard Library (if you're using Kotlin in any part of your project)
     implementation 'org.jetbrains.kotlin:kotlin-stdlib:1.7.0'
 }
+
+// Remove any repositories block if present
+/*
+repositories {
+    google()
+    mavenCentral()
+}
+*/

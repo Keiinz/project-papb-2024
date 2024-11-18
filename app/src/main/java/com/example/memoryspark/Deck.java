@@ -1,13 +1,13 @@
 package com.example.memoryspark;
 
-import androidx.room.Entity;
-import androidx.room.PrimaryKey;
-
-@Entity(tableName = "decks")
+// Remove Room annotations
 public class Deck {
-    @PrimaryKey(autoGenerate = true)
-    private int id;
+    private String id; // Firestore document ID
     private String name;
+
+    // No-argument constructor required for Firestore
+    public Deck() {
+    }
 
     // Constructor
     public Deck(String name) {
@@ -15,11 +15,11 @@ public class Deck {
     }
 
     // Getters and Setters
-    public int getId() {
+    public String getId() {
         return id;
     }
 
-    public void setId(int id) { // Room sets the ID
+    public void setId(String id) { // Firestore sets the ID
         this.id = id;
     }
 
