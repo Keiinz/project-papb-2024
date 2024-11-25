@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1020442953862",
+    "project_id": "memspark-6e5de",
+    "storage_bucket": "memspark-6e5de.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1020442953862:android:03a67ac3e15bf93360e907",
+        "android_client_info": {
+          "package_name": "com.hti.progressfragment"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA88tSY2rkSc-ShUJ8QK-aFmC1zMeYhfkg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
