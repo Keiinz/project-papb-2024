@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "393301144461",
+    "project_id": "memory-spark",
+    "storage_bucket": "memory-spark.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:393301144461:android:30cbb0d50abaef68f6c3c4",
+        "android_client_info": {
+          "package_name": "com.sam.memoryspark"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyADp98UJxPcENQhnKj2RgKlsaozuAsF46Y"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
